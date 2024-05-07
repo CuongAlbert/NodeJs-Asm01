@@ -2,15 +2,16 @@ import React, { useState, useEffect } from "react";
 import axios from "../../utils/axios";
 import requests from "../../utils/requests";
 import "./Banner.css";
+import userToken from "../../utils/userToken";
 
 function Banner() {
   const [movie, setMovie] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
-      const request = await axios.get("trending", {
+      const request = await axios.get(requests.fetchNetflixOriginals, {
         headers: {
-          Authorization: "8qlOkxz4wq",
+          Authorization: userToken.user1.token,
         },
       });
       setMovie(
@@ -18,7 +19,6 @@ function Banner() {
           Math.floor(Math.random() * request.data.results.length - 1)
         ]
       );
-      // Math.floor(Math.random() * request.data.results.length -1)
       return request;
     }
     fetchData();

@@ -8,17 +8,28 @@ const PAGE_SIZE = 20;
 // get all movies in movieList
 const movies = Movies.all();
 
+exports.getMoviesAll = (req, res, next) => {
+  const page = req.query.page || 1;
+  const results = paging(movies, PAGE_SIZE, page);
+  const totalPages = Math.ceil(movies.length / PAGE_SIZE);
+  console.log(results);
+  return res.status(200).json({
+    results,
+    page,
+    total_pages: totalPages,
+  });
+};
+
 exports.getMoviesTrending = (req, res, next) => {
   // get page query
   const page = req.query.page || 1;
-
-  return res.status(200).json(getListMovieByKey(page, "popularity"));
+  const result = getListMovieByKey(page, "popularity");
+  return res.status(200).json(result);
 };
 
 exports.getMoviesTopRate = (req, res, next) => {
   // get page query
   const page = req.query.page || 1;
-
   return res.status(200).json(getListMovieByKey(page, "vote_average"));
 };
 
@@ -77,24 +88,42 @@ exports.postMovies = (req, res, next) => {
     return res.status(404).json({ message: "Not found video" });
   }
   return res.status(200).json({
-    results: results,
+    results: results[0],
   });
 };
 
 exports.postSearchMovies = (req, res, next) => {
+  const genres = Genre.all();
   const page = req.query.page || 1;
-  const keyword = req.body.keyword.toLowerCase();
+  let { keyword, genre, mediaType, language, year } = req.body;
+
+  keyword = keyword ? keyword.toLowerCase() : keyword;
+  genre = genre ? genre.toLowerCase() : genre;
+  mediaType = mediaType ? mediaType.toLowerCase() : mediaType;
+  language = language ? language.toLowerCase() : language;
+  year = year ? +year : year;
+
+  console.log(keyword, genre, language, mediaType, year);
 
   if (!keyword) {
     return res.status(400).json({ message: "Not found keyword param" });
   }
 
-  // filter movie has overview or title includes keyword
-  const searchMovies = movies.filter(
-    (m) =>
-      m.overview?.toLowerCase().includes(keyword) ||
-      m.title?.toLowerCase().includes(keyword)
-  );
+  const searchMovies = movies.filter((m) => {
+    const names = m.genre_ids
+      .map((id) => genres.find((g) => g.id === id))
+      .filter(Boolean)
+      .map((g) => g.name.toLowerCase());
+
+    return (
+      (m.overview?.toLowerCase().includes(keyword) ||
+        m.title?.toLowerCase().includes(keyword)) &&
+      (!language || m.original_language?.toLowerCase().includes(language)) &&
+      (!mediaType || m.media_type?.toLowerCase().includes(mediaType)) &&
+      (!year || new Date(m.release_date)?.getFullYear() === year) &&
+      (!genre || names.find((n) => n.includes(genre)))
+    );
+  });
 
   const results = paging(searchMovies, PAGE_SIZE, page);
   const totalPages = Math.ceil(searchMovies.length / PAGE_SIZE);

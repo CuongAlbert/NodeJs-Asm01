@@ -1,15 +1,15 @@
 const express = require("express");
 
-const cors = require("cors");
-
 const movieRoutes = require("./routes/movie");
 const authenticateToken = require("./middleware/authenticateToken");
+const cors = require("cors");
 
 const app = express();
+app.use(cors());
 
 app.use(express.json());
-app.use(cors);
 
+//Routes
 app.use("/api/movies", authenticateToken, movieRoutes);
 
 app.use((req, res, next) => {
